@@ -33,6 +33,16 @@ if GEMINI_AVAILABLE and GEMINI_API_KEY:
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+@app.route('/', methods=['GET'])
+@app.route('/health', methods=['GET'])
+def index():
+    return jsonify({
+        'status': 'online',
+        'service': 'JanRakshak AI Backend API',
+        'message': '🌱 JanRakshak AI API is running successfully on Render!',
+        'version': '1.0.0'
+    })
+
 @app.route('/api/predict', methods=['POST'])
 def predict():
     data = request.json
