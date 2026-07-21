@@ -269,8 +269,8 @@ function Results({ data, onBack, t }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <h3>{t.nearby_facilities}</h3>
                     <div style={{ fontSize: '0.8rem' }}>
-                        <label><input type="checkbox" checked /> Govt</label>
-                        <label style={{ marginLeft: '10px' }}><input type="checkbox" checked /> Private</label>
+                        <label><input type="checkbox" readOnly defaultChecked /> Govt</label>
+                        <label style={{ marginLeft: '10px' }}><input type="checkbox" readOnly defaultChecked /> Private</label>
                     </div>
                 </div>
                 {data.hospitals.map((hosp, i) => (

@@ -11,7 +11,8 @@
 
 ## 📽️ Submission Details
 - **Team Name:** Code Warriors
-- **Problem Code:** PH001 (Rural Healthcare Intelligence)
+- **Problem Code:** PH001 (predicts the stage of health problem before critical)
+
 - **Demo Video Link:** [Watch Demo on YouTube / Drive](https://1drv.ms/v/c/2ebbeb31c047906b/IQBxKWIECHSkQZf7XmTzOS3yARp8o5k5U2dGGzD7V4QbTes?e=TgE1uG)
 - **Live Presentation:** [D:\hackthon\JanRakshak_AI_Elite_Presentation.pptx](https://1drv.ms/p/c/2ebbeb31c047906b/IQAkGV1JExaBR58iVxIO9A0SAToJf98oR1ZPV7R5depo6F0?e=QCIhXb)
 
@@ -75,7 +76,11 @@ graph TD
 
 ### **1. Clone the Repo**
 ```bash
+<<<<<<< Updated upstream
 git clone https://github.com/kiran122-png/kiran122-png-VISIONX2026_CodeWarriors_PH001.git
+=======
+git clone https://github.com/kiran122-png/VISIONX2026_CodeWarriors_PH001.git
+>>>>>>> Stashed changes
 cd VISIONX2026_CodeWarriors_PH001
 ```
 

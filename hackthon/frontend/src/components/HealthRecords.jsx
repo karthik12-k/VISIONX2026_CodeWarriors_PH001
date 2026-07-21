@@ -4,46 +4,17 @@ function HealthRecords({ t }) {
     const [records, setRecords] = useState([])
 
     useEffect(() => {
-        const fetchAndSync = async () => {
+        const fetchLocalRecords = () => {
             const voiceRecords = JSON.parse(localStorage.getItem('janrakshak_records') || '[]').map(r => ({ ...r, type: 'Voice AI' }))
             const screenRecords = JSON.parse(localStorage.getItem('janrakshak_history') || '[]').map(r => ({ ...r, type: 'Health Screening' }))
             const all = [...voiceRecords, ...screenRecords].sort((a,b) => new Date(b.date) - new Date(a.date))
             setRecords(all)
-
-            // Background Auto-Sync
-            const pending = screenRecords.filter(r => r.status === 'pending')
-            if (pending.length > 0) {
-                for (const record of pending) {
-                    await attemptAutoSync(record)
-                }
-            }
         }
 
-        fetchAndSync()
-        const interval = setInterval(fetchAndSync, 10000) // Check every 10 seconds
+        fetchLocalRecords()
+        const interval = setInterval(fetchLocalRecords, 5000) // Poll LocalStorage for UI updates
         return () => clearInterval(interval)
     }, [])
-
-    const attemptAutoSync = async (record) => {
-        try {
-            const response = await fetch('/api/predict', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(record.patient),
-            })
-            if (response.ok) {
-                const data = await response.json()
-                const history = JSON.parse(localStorage.getItem('janrakshak_history') || '[]')
-                const updatedHistory = history.map(h => {
-                    if (h.date === record.date) {
-                        return { ...data, date: h.date, patient: h.patient }
-                    }
-                    return h
-                })
-                localStorage.setItem('janrakshak_history', JSON.stringify(updatedHistory))
-            }
-        } catch (e) { /* background fail is silent */ }
-    }
 
     const clearRecords = () => {
         if (window.confirm("Are you sure you want to clear all local health records?")) {

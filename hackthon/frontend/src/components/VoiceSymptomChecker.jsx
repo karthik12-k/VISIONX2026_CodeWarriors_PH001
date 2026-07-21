@@ -57,19 +57,31 @@ const SYMPTOM_DB = {
     }
 }
 
-// Simple offline keyword matcher (fallback AI)
+// Simple multi-lingual offline keyword matcher (fallback AI)
 const offlineDiagnose = (text) => {
     const t = text.toLowerCase()
     const matches = []
-    if (/(fever|jvaram|bukhari|bukhar|hot|temperature)/i.test(t)) matches.push(SYMPTOM_DB.fever)
-    if (/(cough|dagg|khansi|phlegm|throat)/i.test(t)) matches.push(SYMPTOM_DB.cough)
-    if (/(skin|rash|chalu|khujli|itch|redness|spot)/i.test(t)) matches.push(SYMPTOM_DB.skin)
-    if (/(stomach|pain|kadupu|pet dard|ache|cramp|vomit|loose|diarrhea|motion)/i.test(t)) matches.push(SYMPTOM_DB.stomach)
-    if (/(breath|urpasa|saans|pant|gasp|air)/i.test(t)) matches.push(SYMPTOM_DB.breathing)
-    if (/(headache|tala noppi|sir dard|head|migraine)/i.test(t)) matches.push(SYMPTOM_DB.headache)
+    
+    // Fever / Jvaram / Bukhari / Bukhar / Tapu / Garm
+    if (/(fever|jvaram|bukhari|bukhar|tap|taap|garm|temperature|ताप|તાવ|बुखार|జ్వరం|ಜ್ವರ|പനി|ಜ್ವರಂ)/i.test(t)) matches.push(SYMPTOM_DB.fever)
+    
+    // Cough / Dagg / Khansi / Khasi / کھانسی
+    if (/(cough|dagg|khansi|khasi|phlegm|throat|खोकला|ખાંસી|खाँसी|దగ్గు|ಕೆಮ್ಮು|കാസി|ಕೆಮ್ಮು)/i.test(t)) matches.push(SYMPTOM_DB.cough)
+    
+    // Skin / Rash / Chalu / Khujli / Itch / Gandha
+    if (/(skin|rash|chalu|khujli|itch|khaj|daag|ખંજવાળ|खाज|ಚರ್ಮ|தோல்|చర్మం|ത്വക്ക്)/i.test(t)) matches.push(SYMPTOM_DB.skin)
+    
+    // Stomach / Kadupu / Pet / Dard / Pot / Potu
+    if (/(stomach|pain|kadupu|pet|dard|ache|cramp|vomit|loose|diarrhea|pota|पोट|પેટ|కడుపు|ಹೊಟ್ಟೆ|വയറ്|வயிறு)/i.test(t)) matches.push(SYMPTOM_DB.stomach)
+    
+    // Breathing / Urpasa / Saans / Swas / Dam
+    if (/(breath|urpasa|saans|pant|gasp|air|asthma|ಶಬ್ದ|శ్వాస|மூச்சு|ശ്വാസം|दम|श्वास)/i.test(t)) matches.push(SYMPTOM_DB.breathing)
+    
+    // Headache / Tala noppi / Sir dard / Dokhudu
+    if (/(headache|tala|noppi|sir|dard|head|migraine|डोकं|માથું|ತಲೆ|தலை|തല|నొప్పు)/i.test(t)) matches.push(SYMPTOM_DB.headache)
     
     if (matches.length === 0) {
-        return [{ id: 'D00', name: 'General Illness', precautions: ['Rest', 'Consult a doctor if symptoms persist'], triage: 'Low' }]
+        return [{ id: 'D00', name: 'General Illness / सामान्य स्वास्थ्य', precautions: ['Rest', 'Consult a doctor if symptoms persist'], triage: 'Low' }]
     }
     return matches
 }
@@ -155,11 +167,18 @@ function VoiceSymptomChecker({ t }) {
                 <select 
                     value={lang} 
                     onChange={(e) => setLang(e.target.value)}
-                    style={{ padding: '0.5rem', borderRadius: '8px', maxWidth: '200px' }}
+                    style={{ padding: '0.6rem', borderRadius: '10px', maxWidth: '300px', border: '1px solid #40916c', fontWeight: 'bold' }}
                     disabled={isRecording}
                 >
-                    <option value="hi-IN">Hindi (हिंदी)</option>
-                    <option value="te-IN">Telugu (తెలుగు)</option>
+                    <option value="hi-IN">हिन्दी (Hindi)</option>
+                    <option value="te-IN">తెలుగు (Telugu)</option>
+                    <option value="mr-IN">मराठी (Marathi)</option>
+                    <option value="bn-IN">বাংলা (Bengali)</option>
+                    <option value="ta-IN">தமிழ் (Tamil)</option>
+                    <option value="kn-IN">ಕನ್ನಡ (Kannada)</option>
+                    <option value="or-IN">ଓଡ଼ିଆ (Odia)</option>
+                    <option value="gu-IN">ગુજરાતી (Gujarati)</option>
+                    <option value="pa-IN">ਪੰਜਾਬੀ (Punjabi)</option>
                     <option value="en-IN">English (India)</option>
                 </select>
                 

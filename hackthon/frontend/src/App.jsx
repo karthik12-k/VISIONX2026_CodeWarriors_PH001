@@ -11,57 +11,138 @@ import EmergencyAlert from './components/EmergencyAlert'
 import { translations } from './translations'
 
 function App() {
-  const [lang, setLang] = useState('en')
+  const [lang, setLang] = React.useState('en')
   const t = translations[lang]
-  const [view, setView] = useState('home')
-  const [predictionData, setPredictionData] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [view, setView] = React.useState('home')
+  const [predictionData, setPredictionData] = React.useState(null)
+  const [loading, setLoading] = React.useState(false)
 
-  const handlePredict = async (formData) => {
-    setLoading(true)
+  // --- Background Auto-Sync ---
+  React.useEffect(() => {
+    const syncProcess = async () => {
+      const history = JSON.parse(localStorage.getItem('janrakshak_history') || '[]')
+      const pending = history.filter(r => r.status === 'pending')
+      
+      if (pending.length > 0) {
+        console.log(`📡 JanRakshak Sync: Attempting to sync ${pending.length} pending records...`)
+        for (const record of pending) {
+          await attemptAutoSync(record)
+        }
+      }
+    }
+
+    const interval = setInterval(syncProcess, 10000) // Check every 10s
+    return () => clearInterval(interval)
+  }, [])
+
+  const attemptAutoSync = async (record) => {
     try {
       const response = await fetch('/api/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(record.patient),
       })
-      const data = await response.json()
-      setPredictionData(data)
-      setView('results')
+      
+      if (response.ok) {
+        const data = await response.json()
+        const history = JSON.parse(localStorage.getItem('janrakshak_history') || '[]')
+        const updatedHistory = history.map(h => {
+          if (h.date === record.date) {
+            // Merge AI results & remove pending status
+            return { ...data, date: h.date, patient: h.patient, status: 'synced' }
+          }
+          return h
+        })
+        localStorage.setItem('janrakshak_history', JSON.stringify(updatedHistory))
+        console.log(`✅ JanRakshak Sync: Record from ${new Date(record.date).toLocaleTimeString()} synced.`)
+      }
+    } catch (e) {
+      // Background fail is silent - it will retry next interval
+    }
+  }
 
-      // Store in local history
-      const history = JSON.parse(localStorage.getItem('janrakshak_history') || '[]')
-      history.unshift({ ...data, date: new Date().toISOString(), patient: formData })
-      localStorage.setItem('janrakshak_history', JSON.stringify(history.slice(0, 50)))
+    const calculateOfflineRisk = (data) => {
+      const age = parseFloat(data.age || 0)
+      const weight = parseFloat(data.weight || 0)
+      const systolic = parseFloat(data.systolic || 0)
+      const diastolic = parseFloat(data.diastolic || 0)
+      const glucose = parseFloat(data.glucose || 0)
+      const hemoglobin = parseFloat(data.hemoglobin || 0)
 
-    } catch (error) {
-      console.error('Error fetching prediction:', error)
-      // Offline Mode Fallback
-      const offlineResult = {
-        heart: { level: 'Offline', percent: 0, color: '#999', why: 'Saved locally. Sync needed for AI analysis.' },
-        diabetes: { level: 'Offline', percent: 0, color: '#999', why: 'Saved locally.' },
-        anemia: { level: 'Offline', percent: 0, color: '#999', why: 'Saved locally.' },
-        overall_status: 'Sync Pending',
-        overall_color: 'gray',
-        recommendations: ["Ensure patient stays hydrated.", "Visit health center when possible."],
+      // Heart Risk Logic
+      let heartScore = 10
+      if (systolic > 140) heartScore += 30
+      if (diastolic > 90) heartScore += 20
+      if (age > 50) heartScore += 15
+      heartScore = Math.min(heartScore, 95)
+      const heartLevel = heartScore > 70 ? "High" : (heartScore > 40 ? "Moderate" : "Low")
+      const heartColor = heartScore > 70 ? "red" : (heartScore > 40 ? "yellow" : "green")
+
+      // Diabetes Logic
+      let diabetesScore = 15
+      if (glucose > 140) diabetesScore += 40
+      if (glucose > 180) diabetesScore += 30
+      if (weight > 80) diabetesScore += 10
+      if (weight > 100) diabetesScore += 10
+      diabetesScore = Math.min(diabetesScore, 95)
+      const diabetesLevel = diabetesScore > 70 ? "High" : (diabetesScore > 40 ? "Moderate" : "Low")
+      const diabetesColor = diabetesScore > 70 ? "red" : (diabetesScore > 40 ? "yellow" : "green")
+
+      // Anemia Logic
+      let anemiaScore = 10
+      if (hemoglobin < 12) anemiaScore += 40
+      if (hemoglobin < 10) anemiaScore += 40
+      anemiaScore = Math.min(anemiaScore, 95)
+      const anemiaLevel = anemiaScore > 70 ? "High" : (anemiaScore > 40 ? "Moderate" : "Low")
+      const anemiaColor = anemiaScore > 70 ? "red" : (anemiaScore > 40 ? "yellow" : "green")
+
+      return {
+        heart: { level: heartLevel, percent: heartScore, color: heartColor, why: `Offline: Based on BP ${systolic}/${diastolic} and age ${age}.` },
+        diabetes: { level: diabetesLevel, percent: diabetesScore, color: diabetesColor, why: `Offline: Based on Glucose ${glucose}mg/dL.` },
+        anemia: { level: anemiaLevel, percent: anemiaScore, color: anemiaColor, why: `Offline: Based on Hb ${hemoglobin}g/dL.` },
+        overall_status: (heartLevel === "High" || diabetesLevel === "High" || anemiaLevel === "High") ? "Critical" : "Stable",
+        overall_color: (heartLevel === "High" || diabetesLevel === "High" || anemiaLevel === "High") ? "red" : "green",
+        recommendations: ["OFFLINE MODE: AI Prediction based on local clinical rules.", "Connect to internet for full Gemini Vision analysis."],
         prescriptions: [],
         hospitals: [],
         nutrition: [],
         schemes: [],
         isOffline: true
       }
-      
-      const history = JSON.parse(localStorage.getItem('janrakshak_history') || '[]')
-      history.unshift({ ...offlineResult, date: new Date().toISOString(), patient: formData, status: 'pending' })
-      localStorage.setItem('janrakshak_history', JSON.stringify(history.slice(0, 50)))
-      
-      setPredictionData(offlineResult)
-      setView('results')
-      alert('Offline Mode: Data saved locally. It will sync when the server is back online.')
-    } finally {
-      setLoading(false)
     }
-  }
+
+    const handlePredict = async (formData) => {
+      setLoading(true)
+      try {
+        const response = await fetch('/api/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        })
+        const data = await response.json()
+        setPredictionData(data)
+        setView('results')
+
+        const history = JSON.parse(localStorage.getItem('janrakshak_history') || '[]')
+        history.unshift({ ...data, date: new Date().toISOString(), patient: formData, status: 'synced' })
+        localStorage.setItem('janrakshak_history', JSON.stringify(history.slice(0, 50)))
+
+      } catch (error) {
+        console.error('Error fetching prediction:', error)
+        // Advanced Local CDSS Fallback
+        const offlineResult = calculateOfflineRisk(formData)
+        
+        const history = JSON.parse(localStorage.getItem('janrakshak_history') || '[]')
+        history.unshift({ ...offlineResult, date: new Date().toISOString(), patient: formData, status: 'pending' })
+        localStorage.setItem('janrakshak_history', JSON.stringify(history.slice(0, 50)))
+        
+        setPredictionData(offlineResult)
+        setView('results')
+        alert('Offline Mode: Using local clinical scoring. Data will sync when online.')
+      } finally {
+        setLoading(false)
+      }
+    }
 
   return (
     <div className="App" style={{
@@ -128,26 +209,33 @@ function App() {
       <nav style={{ position: 'relative', zIndex: 10 }}>
         <div className="logo">🌱 {t.title}</div>
         <div className="nav-links">
-          <select value={lang} onChange={(e) => setLang(e.target.value)} style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--primary)' }}>
-            <option value="en">English</option>
-            <option value="hi">हिंदी</option>
-            <option value="te">తెలుగు</option>
+          <select value={lang} onChange={(e) => setLang(e.target.value)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid var(--primary)', background: 'white', fontWeight: 'bold' }}>
+            <option value="en">English (Global)</option>
+            <option value="hi">हिंदी (Hindi)</option>
+            <option value="te">తెలుగు (Telugu)</option>
+            <option value="mr">मराठी (Marathi)</option>
+            <option value="bn">বাংলা (Bengali)</option>
+            <option value="ta">தமிழ் (Tamil)</option>
+            <option value="kn">ಕನ್ನಡ (Kannada)</option>
+            <option value="or">ଓଡ଼ିଆ (Odia)</option>
+            <option value="gu">ગુજરાતી (Gujarati)</option>
+            <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
           </select>
           <button onClick={() => setView('home')} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>{t.home}</button>
           <button onClick={() => setView('dashboard')} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>{t.dashboard}</button>
-          <button onClick={() => setView('voiceCheck')} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>🎤 Voice AI</button>
-          <button onClick={() => setView('records')} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>📁 Records</button>
-          <button onClick={() => setView('lookup')} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>💊 Medicine</button>
-          <button onClick={() => setView('woundScan')} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>📷 Wound</button>
-          <button onClick={() => setView('maternal')} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>🤱 Maternal</button>
+          <button onClick={() => setView('voiceCheck')} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>{t.voice_ai}</button>
+          <button onClick={() => setView('records')} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>{t.records}</button>
+          <button onClick={() => setView('lookup')} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>{t.medicine}</button>
+          <button onClick={() => setView('woundScan')} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>{t.wound}</button>
+          <button onClick={() => setView('maternal')} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>{t.maternal}</button>
         </div>
       </nav>
 
       <main className="container">
         {view === 'home' && (
           <div className="hero">
-            <h1 style={{ fontSize: '3.5rem', marginBottom: '1.2rem', color: '#1b4332' }}>JANRAKSHAK AI - {t.tagline}</h1>
-            <p style={{ fontSize: '1.2rem', color: '#555', marginBottom: '2rem' }}>AI-powered rural health risk detection. Early screening for heart disease, diabetes, and anemia.</p>
+            <h1 style={{ fontSize: '3.5rem', marginBottom: '1.2rem', color: '#1b4332' }}>{t.title} — {t.tagline}</h1>
+            <p style={{ fontSize: '1.2rem', color: '#555', marginBottom: '2rem' }}>{t.description}</p>
             <button className="btn" onClick={() => setView('screening')}>{t.start_screening}</button>
           </div>
         )}
