@@ -31,7 +31,7 @@ if GEMINI_AVAILABLE and GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/api/predict', methods=['POST'])
 def predict():
@@ -232,16 +232,35 @@ def predict():
             "why": "Maintains overall immunity and vitality."
         })
 
+    # Dynamic 'why' explanations
+    heart_explanation = f"Based on BP of {systolic}/{diastolic} and age {age}."
+    if heart_risk == "Low":
+        heart_explanation = f"Vitals (BP {systolic}/{diastolic}) and age {age} are within normal ranges."
+    elif heart_risk == "High":
+        heart_explanation = f"Critical BP {systolic}/{diastolic} detected. High risk of cardiovascular event."
+
+    diabetes_explanation = f"Glucose levels of {glucose}mg/dL detected."
+    if diabetes_risk == "Low":
+        diabetes_explanation = f"Glucose level {glucose}mg/dL is within the normal range."
+    elif diabetes_risk == "High":
+        diabetes_explanation = f"Critically high glucose ({glucose}mg/dL) indicates severe hyperglycemia."
+
+    anemia_explanation = f"Hemoglobin concentration is {hemoglobin}g/dL."
+    if anemia_risk == "Low":
+        anemia_explanation = f"Hemoglobin {hemoglobin}g/dL is above the clinical threshold of 12g/dL."
+    elif anemia_risk == "High":
+        anemia_explanation = f"Severe anemia detected: Hemoglobin {hemoglobin}g/dL is significantly below 12g/dL."
+
     result = {
-        "heart": {"level": heart_risk, "percent": heart_score, "color": heart_color, "why": "Based on elevated BP and age factors."},
-        "diabetes": {"level": diabetes_risk, "percent": diabetes_score, "color": diabetes_color, "why": "Post-prandial glucose levels above 140mg/dL detected."},
-        "anemia": {"level": anemia_risk, "percent": anemia_score, "color": anemia_color, "why": "Hemoglobin concentration is below the clinical threshold of 12g/dL."},
+        "heart": {"level": heart_risk, "percent": heart_score, "color": heart_color, "why": heart_explanation},
+        "diabetes": {"level": diabetes_risk, "percent": diabetes_score, "color": diabetes_color, "why": diabetes_explanation},
+        "anemia": {"level": anemia_risk, "percent": anemia_score, "color": anemia_color, "why": anemia_explanation},
         "overall_status": "Critical" if "High" in [heart_risk, diabetes_risk, anemia_risk] else "Stable",
         "overall_color": "red" if "High" in [heart_risk, diabetes_risk, anemia_risk] else ("yellow" if "Moderate" in [heart_risk, diabetes_risk, anemia_risk] else "green"),
         "recommendations": [
-            "Consult a nearby medical officer immediately.",
+            "Consult a nearby medical officer immediately." if "High" in [heart_risk, diabetes_risk, anemia_risk] else "Maintain regular checkups.",
             "Maintain a low-sodium, balanced diet.",
-            "Monitor vital signs every 6 hours."
+            "Monitor vital signs regularly."
         ],
         "prescriptions": prescriptions,
         "hospitals": hospitals,
@@ -1184,5 +1203,6 @@ def maternal_risk():
     })
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=False, host='0.0.0.0', port=port)
 

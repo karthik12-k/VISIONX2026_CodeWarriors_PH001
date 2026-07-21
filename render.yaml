@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: janrakshak-backend
+    runtime: python
+    region: singapore
+    plan: free
+    rootDir: hackthon/backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app_utf8_clean:app
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PYTHON_VERSION
+        value: 3.10.11

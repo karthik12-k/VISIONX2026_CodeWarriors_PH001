@@ -1,0 +1,1 @@
+web: gunicorn app_utf8_clean:app

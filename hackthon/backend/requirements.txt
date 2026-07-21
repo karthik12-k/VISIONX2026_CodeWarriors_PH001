@@ -1,5 +1,6 @@
-flask
-flask-cors
-requests
-google-generativeai
-Pillow
+Flask>=3.0.0
+flask-cors>=4.0.0
+gunicorn>=21.2.0
+google-generativeai>=0.3.0
+Pillow>=10.0.0
+requests>=2.31.0
