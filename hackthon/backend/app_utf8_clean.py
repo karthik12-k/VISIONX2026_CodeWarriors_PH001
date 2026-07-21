@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import random
 from datetime import datetime
@@ -24,24 +24,35 @@ try:
 except ImportError:
     PIL_AVAILABLE = False
 
-#  - -- - -- Gemini API setup  - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - --
+#  - -‚- - -‚- Gemini API setup  - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚- - -‚-
 # Set your Gemini API key here OR as env var GEMINI_API_KEY
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyCFqIz14Mq9EFVYFBCRAlzWHAVxsO2_JlE")
 if GEMINI_AVAILABLE and GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-app = Flask(__name__)
+DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'dist'))
+if not os.path.exists(DIST_DIR):
+    DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../frontend/dist'))
+
+app = Flask(__name__, static_folder=DIST_DIR if os.path.exists(DIST_DIR) else None, static_url_path='')
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-@app.route('/', methods=['GET'])
-@app.route('/health', methods=['GET'])
-def index():
-    return jsonify({
-        'status': 'online',
-        'service': 'JanRakshak AI Backend API',
-        'message': '🌱 JanRakshak AI API is running successfully on Render!',
-        'version': '1.0.0'
-    })
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_frontend(path):
+    if path.startswith('api/'):
+        return jsonify({'error': 'Endpoint not found'}), 404
+    if app.static_folder and path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    elif app.static_folder and os.path.exists(os.path.join(app.static_folder, 'index.html')):
+        return send_from_directory(app.static_folder, 'index.html')
+    else:
+        return jsonify({
+            'status': 'online',
+            'service': 'JanRakshak AI Backend API',
+            'message': '🌱 JanRakshak AI API is running successfully on Render!',
+            'version': '1.0.0'
+        })
 
 @app.route('/api/predict', methods=['POST'])
 def predict():
