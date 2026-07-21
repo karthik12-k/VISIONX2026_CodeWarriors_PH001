@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { API_BASE_URL } from '../config'
 
 const ICON_MAP = {
     RED: { dot: '#e63946', emoji: '🔴' },
@@ -47,7 +48,7 @@ function MaternalHealth() {
         e.preventDefault()
         setLoading(true); setError(''); setResult(null)
         try {
-            const res = await fetch('/api/maternal-risk', {
+            const res = await fetch(`${API_BASE_URL}/api/maternal-risk`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -68,7 +69,7 @@ function MaternalHealth() {
             if (data.error) setError(data.error)
             else { setResult(data); setTab('result') }
         } catch {
-            setError('Could not reach backend. Ensure server is running on port 5000.')
+            setError('Could not reach backend. Please check your internet connection or backend server.')
         } finally {
             setLoading(false)
         }

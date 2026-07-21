@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { API_BASE_URL } from '../config'
 
 function HealthRecords({ t }) {
     const [records, setRecords] = useState([])
@@ -26,7 +27,7 @@ function HealthRecords({ t }) {
 
     const handleSync = async (record) => {
         try {
-            const response = await fetch('/api/predict', {
+            const response = await fetch(`${API_BASE_URL}/api/predict`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(record.patient),

@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { API_BASE_URL } from '../config'
 
 const QUICK_SEARCHES = [
     'Fever', 'Diabetes', 'Typhoid', 'Malaria', 'Cold', 'Cough',
@@ -22,7 +23,7 @@ function DiseaseLookup({ t }) {
         setSuggestions([])
         setError('')
         try {
-            const res = await fetch('/api/disease-lookup', {
+            const res = await fetch(`${API_BASE_URL}/api/disease-lookup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ disease: q })

@@ -9,6 +9,7 @@ import VoiceSymptomChecker from './components/VoiceSymptomChecker'
 import HealthRecords from './components/HealthRecords'
 import EmergencyAlert from './components/EmergencyAlert'
 import { translations } from './translations'
+import { API_BASE_URL } from './config'
 
 function App() {
   const [lang, setLang] = React.useState('en')
@@ -19,25 +20,22 @@ function App() {
 
   // --- Background Auto-Sync ---
   React.useEffect(() => {
-    const syncProcess = async () => {
+    const syncOfflineRecords = async () => {
       const history = JSON.parse(localStorage.getItem('janrakshak_history') || '[]')
-      const pending = history.filter(r => r.status === 'pending')
-      
-      if (pending.length > 0) {
-        console.log(`📡 JanRakshak Sync: Attempting to sync ${pending.length} pending records...`)
-        for (const record of pending) {
-          await attemptAutoSync(record)
-        }
+      const unsynced = history.filter(h => h.status === 'pending_sync')
+
+      for (const record of unsynced) {
+        await attemptAutoSync(record)
       }
     }
 
-    const interval = setInterval(syncProcess, 10000) // Check every 10s
+    const interval = setInterval(syncOfflineRecords, 10000)
     return () => clearInterval(interval)
   }, [])
 
   const attemptAutoSync = async (record) => {
     try {
-      const response = await fetch('/api/predict', {
+      const response = await fetch(`${API_BASE_URL}/api/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(record.patient),
@@ -114,7 +112,7 @@ function App() {
     const handlePredict = async (formData) => {
       setLoading(true)
       try {
-        const response = await fetch('/api/predict', {
+        const response = await fetch(`${API_BASE_URL}/api/predict`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData),

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import HospitalMap from './Map'
+import { API_BASE_URL } from '../config'
 
 function Results({ data, onBack, t }) {
     const [showEmergency, setShowEmergency] = useState(false)
@@ -9,7 +10,7 @@ function Results({ data, onBack, t }) {
     const [speaking, setSpeaking] = useState(false)
 
     useEffect(() => {
-        if (data.overall_status === 'Critical') {
+        if (data && data.overall_color === 'red' && !alerted) {
             // Auto-open emergency modal
             setShowEmergency(true)
 
@@ -20,7 +21,7 @@ function Results({ data, onBack, t }) {
                 data.anemia.level === 'High' ? 'Anemia' : null,
             ].filter(Boolean).join(', ')
 
-            fetch('/api/alert-hospital', {
+            fetch(`${API_BASE_URL}/api/alert-hospital`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

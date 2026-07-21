@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
+import { API_BASE_URL } from '../config'
 
 const SCAN_MODES = [
     {
@@ -130,7 +131,7 @@ function WoundAnalyzer({ t }) {
         formData.append('image', imageFile)
         formData.append('scan_mode', scanMode)
         try {
-            const res = await fetch('/api/image-diagnosis', {
+            const res = await fetch(`${API_BASE_URL}/api/image-diagnosis`, {
                 method: 'POST',
                 body: formData,
             })
@@ -138,7 +139,7 @@ function WoundAnalyzer({ t }) {
             if (data.error) setError(data.error)
             else setResult(data)
         } catch {
-            setError('Could not reach the AI server. Please ensure the backend is running on port 5000.')
+            setError('Could not reach the AI server. Please check your internet connection or backend server.')
         } finally {
             setLoading(false)
         }

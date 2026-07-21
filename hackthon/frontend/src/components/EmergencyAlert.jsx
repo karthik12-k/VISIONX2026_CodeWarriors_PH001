@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { API_BASE_URL } from '../config'
 
 function EmergencyAlert() {
     const [sending, setSending] = useState(false)
@@ -16,7 +17,7 @@ function EmergencyAlert() {
                 })
             }
 
-            const res = await fetch('/api/alert-hospital', {
+            const res = await fetch(`${API_BASE_URL}/api/alert-hospital`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
